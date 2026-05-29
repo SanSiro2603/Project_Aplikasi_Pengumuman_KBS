@@ -1,22 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:async';
+import '../config/app_config.dart';
+import '../logging/app_logger.dart';
 
 class NotificationService {
-  static const String _oneSignalAppId = String.fromEnvironment(
-    'ONESIGNAL_APP_ID',
-    defaultValue: 'fc4e17b3-f7e6-4336-9537-67814918be90',
-  );
+  static const String _oneSignalAppId = AppConfig.oneSignalAppId;
   static bool _initialized = false;
 
   static Future<void> initialize() async {
     if (_initialized) return;
 
     if (_oneSignalAppId.isEmpty) {
-      debugPrint(
-        'OneSignal belum dikonfigurasi. Jalankan dengan --dart-define=ONESIGNAL_APP_ID=YOUR_APP_ID',
+      await AppLogger.info(
+        'notification.init',
+        'ONESIGNAL_APP_ID is empty, skip push init',
       );
       return;
     }
@@ -123,7 +124,11 @@ class NotificationService {
         'token': id,
       });
     } catch (e) {
-      debugPrint('Failed saving OneSignal subscription id: $e');
+      await AppLogger.error(
+        'notification.save_subscription_id',
+        e,
+        context: {'subscription_id': id},
+      );
     }
   }
 }

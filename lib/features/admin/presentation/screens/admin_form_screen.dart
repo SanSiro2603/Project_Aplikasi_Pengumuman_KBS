@@ -8,6 +8,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/auth/admin_access.dart';
+import '../../../../core/logging/app_logger.dart';
 
 class AdminFormScreen extends StatefulWidget {
   final String? id;
@@ -18,6 +20,16 @@ class AdminFormScreen extends StatefulWidget {
 }
 
 class _AdminFormScreenState extends State<AdminFormScreen> {
+  static const int _maxInputImageBytes = 15 * 1024 * 1024;
+  static const _allowedExt = {
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.webp',
+    '.heic',
+    '.heif',
+  };
+
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   String _status = 'draft';
@@ -74,6 +86,23 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
 
+    final ext = p.extension(pickedFile.path).toLowerCase();
+    final imageSize = await pickedFile.length();
+    if (ext.isNotEmpty && !_allowedExt.contains(ext)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Format gambar $ext belum didukung.')),
+      );
+      return;
+    }
+    if (imageSize > _maxInputImageBytes) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ukuran gambar maksimal 15MB.')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       final compressedFile = await _compressImageSafely(pickedFile);
@@ -118,6 +147,13 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
   }
 
   Future<void> _saveAnnouncement() async {
+    if (!AdminAccess.isAdmin()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Akses ditolak. Hanya admin.')),
+      );
+      return;
+    }
+
     if (_titleController.text.isEmpty || _contentController.text.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -135,9 +171,17 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
         final fileName = '${const Uuid().v4()}$ext';
         final filePath = 'images/$fileName';
 
+        final mimeType = ext == '.png'
+            ? 'image/png'
+            : (ext == '.webp' ? 'image/webp' : 'image/jpeg');
+
         await Supabase.instance.client.storage
             .from('announcements')
-            .upload(filePath, File(_selectedImage!.path));
+            .upload(
+              filePath,
+              File(_selectedImage!.path),
+              fileOptions: FileOptions(contentType: mimeType),
+            );
 
         imageUrl = Supabase.instance.client.storage
             .from('announcements')
@@ -157,28 +201,31 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
       String announcementId = widget.id ?? '';
       String announcementTitle = _titleController.text.trim();
       String announcementCategory = _category;
+      String? announcementImageUrl = imageUrl;
 
       if (widget.id == null) {
         final inserted = await Supabase.instance.client
             .from('announcements')
             .insert(payload)
-            .select('id,title,category,status')
+            .select('id,title,category,status,image_url')
             .single();
         announcementId = inserted['id'] as String;
         announcementTitle = inserted['title'] as String;
         announcementCategory = inserted['category'] as String;
+        announcementImageUrl = inserted['image_url'] as String?;
       } else {
         payload['updated_at'] = DateTime.now().toIso8601String();
         final updated = await Supabase.instance.client
             .from('announcements')
             .update(payload)
             .eq('id', widget.id!)
-            .select('id,title,category,status');
+            .select('id,title,category,status,image_url');
         if (updated.isNotEmpty) {
           final first = updated.first;
           announcementId = first['id'] as String;
           announcementTitle = first['title'] as String;
           announcementCategory = first['category'] as String;
+          announcementImageUrl = first['image_url'] as String?;
         }
       }
 
@@ -190,11 +237,21 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
           id: announcementId,
           title: announcementTitle,
           category: announcementCategory,
+          imageUrl: announcementImageUrl,
         );
       }
 
       if (mounted) context.go('/admin');
     } catch (e) {
+      await AppLogger.error(
+        'admin_form.save_announcement',
+        e,
+        context: {
+          'announcement_id': widget.id,
+          'status': _status,
+          'category': _category,
+        },
+      );
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -209,6 +266,7 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
     required String id,
     required String title,
     required String category,
+    String? imageUrl,
   }) async {
     try {
       await Supabase.instance.client.functions.invoke(
@@ -219,10 +277,16 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
             'title': title,
             'category': category,
             'status': 'published',
+            'image_url': imageUrl,
           },
         },
       );
     } catch (e) {
+      await AppLogger.error(
+        'admin_form.trigger_publish_notification',
+        e,
+        context: {'announcement_id': id, 'category': category},
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

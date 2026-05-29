@@ -10,6 +10,7 @@ import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/notifications/notification_service.dart';
+import '../../../../core/update/app_update_service.dart';
 import '../../../announcement/data/models/announcement_model.dart';
 import '../../../announcement/presentation/providers/announcement_provider.dart';
 import '../widgets/announcement_card.dart';
@@ -49,9 +50,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _promptNotificationAndSoundConsent();
+      _initializeHomeSession();
     });
     _searchController.addListener(_onSearchChanged);
+  }
+
+  Future<void> _initializeHomeSession() async {
+    await _promptNotificationAndSoundConsent();
+    if (!mounted) return;
+    await AppUpdateService.instance.checkAndPrompt(context);
   }
 
   @override
