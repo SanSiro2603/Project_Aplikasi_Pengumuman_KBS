@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/auth/admin_access.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../announcement/data/models/announcement_model.dart';
 import '../../../announcement/presentation/providers/announcement_provider.dart';
 import '../../../guest/presentation/widgets/zoomable_image_viewer.dart';
@@ -73,6 +75,13 @@ class AdminDashboardScreen extends ConsumerWidget {
     );
 
     if (shouldDelete != true) return;
+    if (!AdminAccess.isAdmin()) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Akses ditolak. Hanya admin.')),
+      );
+      return;
+    }
 
     try {
       await Supabase.instance.client
@@ -85,6 +94,11 @@ class AdminDashboardScreen extends ConsumerWidget {
         const SnackBar(content: Text('Pengumuman berhasil dihapus.')),
       );
     } catch (e) {
+      await AppLogger.error(
+        'admin_dashboard.delete_announcement',
+        e,
+        context: {'announcement_id': announcement.id},
+      );
       if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,

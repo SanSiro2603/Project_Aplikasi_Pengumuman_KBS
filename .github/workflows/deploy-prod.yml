@@ -1,0 +1,55 @@
+name: Deploy Prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_note:
+        description: 'Release note summary'
+        required: true
+        type: string
+
+jobs:
+  deploy_prod:
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+      - name: Apply migrations to prod
+        run: |
+          supabase db push \
+            --project-ref "$SUPABASE_PROJECT_REF_PROD" \
+            --password "$SUPABASE_DB_PASSWORD_PROD"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF_PROD: ${{ secrets.SUPABASE_PROJECT_REF_PROD }}
+          SUPABASE_DB_PASSWORD_PROD: ${{ secrets.SUPABASE_DB_PASSWORD_PROD }}
+      - name: Deploy edge function to prod
+        run: supabase functions deploy notify_warga --project-ref "$SUPABASE_PROJECT_REF_PROD"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF_PROD: ${{ secrets.SUPABASE_PROJECT_REF_PROD }}
+      - name: Smoke test notify_warga (prod)
+        run: |
+          curl --fail-with-body \
+            -X POST "https://${SUPABASE_PROJECT_REF_PROD}.supabase.co/functions/v1/notify_warga" \
+            -H "Content-Type: application/json" \
+            -H "apikey: ${SUPABASE_ANON_KEY_PROD}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY_PROD}" \
+            -d '{"record":{"id":"smoke-prod","title":"Smoke Prod","category":"umum","status":"published"}}'
+        env:
+          SUPABASE_PROJECT_REF_PROD: ${{ secrets.SUPABASE_PROJECT_REF_PROD }}
+          SUPABASE_ANON_KEY_PROD: ${{ secrets.SUPABASE_ANON_KEY_PROD }}
+      - name: Publish release artifact
+        run: |
+          mkdir -p release
+          {
+            echo "Release Date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            echo "Release Note: ${{ github.event.inputs.release_note }}"
+            echo "Commit: $GITHUB_SHA"
+          } > release/release-notes.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release/release-notes.txt
+

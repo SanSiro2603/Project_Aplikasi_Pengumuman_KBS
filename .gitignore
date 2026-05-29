@@ -13,6 +13,7 @@
 migrate_working_dir/
 
 # IntelliJ related
+
 *.iml
 *.ipr
 *.iws
@@ -43,3 +44,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local environment and Supabase CLI temp
+env/*.json
+supabase/.temp/

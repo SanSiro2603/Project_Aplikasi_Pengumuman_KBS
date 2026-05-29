@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../auth/admin_access.dart';
 import '../../features/guest/presentation/screens/splash_screen.dart';
 import '../../features/guest/presentation/screens/home_screen.dart';
 import '../../features/guest/presentation/screens/detail_screen.dart';
@@ -12,6 +13,7 @@ class AppRouter {
     initialLocation: '/',
     redirect: (context, state) {
       final isAuth = Supabase.instance.client.auth.currentSession != null;
+      final isAdmin = AdminAccess.isAdmin();
       final isGoingToAdmin = state.matchedLocation.startsWith('/admin');
       final isGoingToLogin = state.matchedLocation == '/admin/login';
 
@@ -19,22 +21,19 @@ class AppRouter {
         if (!isAuth && !isGoingToLogin) {
           return '/admin/login'; // Cekam admin yg belum login
         }
+        if (isAuth && !isAdmin && !isGoingToLogin) {
+          return '/home';
+        }
         if (isAuth && isGoingToLogin) {
-          return '/admin'; // Admin udah login, jangan ke login screen
+          return isAdmin ? '/admin' : '/home';
         }
       }
 
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/',
-        builder: (context, state) => const SplashScreen(),
-      ),
-      GoRoute(
-        path: '/home',
-        builder: (context, state) => const HomeScreen(),
-      ),
+      GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
+      GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(
         path: '/detail/:id',
         builder: (context, state) {

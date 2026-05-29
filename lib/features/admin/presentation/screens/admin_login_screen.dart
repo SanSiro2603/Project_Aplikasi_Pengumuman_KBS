@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/auth/admin_access.dart';
+import '../../../../core/logging/app_logger.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -16,6 +18,18 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _isPasswordHidden = true;
+
+  String _mapLoginError(Object error) {
+    final raw = error.toString().toLowerCase();
+    if (raw.contains('akun ini bukan admin')) {
+      return 'Akun ini bukan admin.';
+    }
+    if (raw.contains('invalid_credentials') ||
+        raw.contains('invalid login credentials')) {
+      return 'Email atau password salah.';
+    }
+    return 'Login gagal. Silakan coba lagi.';
+  }
 
   @override
   void dispose() {
@@ -31,14 +45,36 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+      if (!AdminAccess.isAdmin()) {
+        await Supabase.instance.client.auth.signOut();
+        throw Exception('Akun ini bukan admin.');
+      }
       if (context.mounted) {
         context.go('/admin');
       }
-    } catch (e) {
+    } on AuthApiException catch (e) {
+      await AppLogger.error(
+        'admin_login.sign_in',
+        e,
+        context: {'email': _emailController.text.trim()},
+      );
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login gagal: ${e.toString()}')),
-        );
+        final errorMessage = _mapLoginError(e);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
+      }
+    } catch (e) {
+      await AppLogger.error(
+        'admin_login.sign_in',
+        e,
+        context: {'email': _emailController.text.trim()},
+      );
+      if (context.mounted) {
+        final errorMessage = _mapLoginError(e);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -87,7 +123,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF06122A), Color(0xFF101F3C), Color(0xFF0A142B)],
+                  colors: [
+                    Color(0xFF06122A),
+                    Color(0xFF101F3C),
+                    Color(0xFF0A142B),
+                  ],
                 ),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(46),
@@ -113,10 +153,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     ),
                     border: Border.all(color: Colors.white24),
                   ),
-                  child: Lottie.asset(
-                    'assets/lottie/mosque.json',
-                    repeat: true,
-                    fit: BoxFit.contain,
+                  child: RepaintBoundary(
+                    child: Lottie.asset(
+                      'assets/lottie/mosque.json',
+                      repeat: false,
+                      animate: false,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
               ),
@@ -162,10 +205,14 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       prefixIcon: HugeIcons.strokeRoundedCirclePassword,
                       suffixIcon: IconButton(
                         onPressed: () {
-                          setState(() => _isPasswordHidden = !_isPasswordHidden);
+                          setState(
+                            () => _isPasswordHidden = !_isPasswordHidden,
+                          );
                         },
                         icon: Icon(
-                          _isPasswordHidden ? Icons.visibility_off : Icons.visibility,
+                          _isPasswordHidden
+                              ? Icons.visibility_off
+                              : Icons.visibility,
                           color: const Color(0xFF5A657A),
                         ),
                       ),
@@ -183,9 +230,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        shadowColor: const Color(0xFF1EA95A).withValues(alpha: 0.55),
+                        shadowColor: const Color(
+                          0xFF1EA95A,
+                        ).withValues(alpha: 0.55),
                       ),
-                      onPressed: _isLoading ? null : () => _handleLogin(context),
+                      onPressed: _isLoading
+                          ? null
+                          : () => _handleLogin(context),
                       child: _isLoading
                           ? const SizedBox(
                               width: 24,

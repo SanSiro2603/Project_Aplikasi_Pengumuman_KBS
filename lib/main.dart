@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/config/app_config.dart';
+import 'core/logging/app_logger.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
@@ -8,15 +12,25 @@ import 'core/router/app_router.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  AppConfig.validate();
+
   await Supabase.initialize(
-    url: 'https://pmyhqrtfmqokyxhccvfh.supabase.co',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBteWhxcnRmbXFva3l4aGNjdmZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwOTE2MzMsImV4cCI6MjA5NDY2NzYzM30.K1sEHXN_YZGHvPKi9ZRr7jLsj4mEehVF8cTNI0DDM-o',
+    url: AppConfig.supabaseUrl,
+    anonKey: AppConfig.supabaseAnonKey,
   );
 
-  await NotificationService.initialize();
-
   runApp(const ProviderScope(child: MyApp()));
+
+  // Do not block first frame with notification bootstrap.
+  unawaited(_initializeBackgroundServices());
+}
+
+Future<void> _initializeBackgroundServices() async {
+  try {
+    await NotificationService.initialize();
+  } catch (e, st) {
+    await AppLogger.error('main.initialize_notifications', e, stackTrace: st);
+  }
 }
 
 class MyApp extends StatelessWidget {
