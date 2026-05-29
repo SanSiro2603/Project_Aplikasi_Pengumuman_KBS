@@ -1,0 +1,39 @@
+name: Deploy Dev
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy_dev:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+      - name: Apply migrations to dev
+        run: |
+          supabase db push \
+            --project-ref "$SUPABASE_PROJECT_REF_DEV" \
+            --password "$SUPABASE_DB_PASSWORD_DEV"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF_DEV: ${{ secrets.SUPABASE_PROJECT_REF_DEV }}
+          SUPABASE_DB_PASSWORD_DEV: ${{ secrets.SUPABASE_DB_PASSWORD_DEV }}
+      - name: Deploy edge function to dev
+        run: supabase functions deploy notify_warga --project-ref "$SUPABASE_PROJECT_REF_DEV"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF_DEV: ${{ secrets.SUPABASE_PROJECT_REF_DEV }}
+      - name: Smoke test notify_warga (dev)
+        run: |
+          curl --fail-with-body \
+            -X POST "https://${SUPABASE_PROJECT_REF_DEV}.supabase.co/functions/v1/notify_warga" \
+            -H "Content-Type: application/json" \
+            -H "apikey: ${SUPABASE_ANON_KEY_DEV}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY_DEV}" \
+            -d '{"record":{"id":"smoke-dev","title":"Smoke Dev","category":"umum","status":"published"}}'
+        env:
+          SUPABASE_PROJECT_REF_DEV: ${{ secrets.SUPABASE_PROJECT_REF_DEV }}
+          SUPABASE_ANON_KEY_DEV: ${{ secrets.SUPABASE_ANON_KEY_DEV }}
+

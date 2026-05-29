@@ -1,0 +1,206 @@
+name: Release Distribution
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_notes:
+        description: "Catatan rilis"
+        required: true
+        type: string
+      min_supported_version_code:
+        description: "Override min supported version code (opsional)"
+        required: false
+        type: string
+      force_update_override:
+        description: "Paksa update walau bukan major"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build_release:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.vars.outputs.tag }}
+      version_name: ${{ steps.vars.outputs.version_name }}
+      version_code: ${{ steps.vars.outputs.version_code }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Read app version
+        id: vars
+        shell: bash
+        run: |
+          VERSION_LINE="$(grep '^version:' pubspec.yaml | awk '{print $2}')"
+          VERSION_NAME="${VERSION_LINE%%+*}"
+          VERSION_CODE="${VERSION_LINE##*+}"
+          TAG="v${VERSION_NAME}+${VERSION_CODE}"
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          PAGES_MANIFEST_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${REPO_NAME}/latest.json"
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "pages_manifest_url=$PAGES_MANIFEST_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build split release APK
+        env:
+          SUPABASE_URL_PROD: ${{ secrets.SUPABASE_URL_PROD }}
+          SUPABASE_ANON_KEY_PROD: ${{ secrets.SUPABASE_ANON_KEY_PROD }}
+          ONESIGNAL_APP_ID_PROD: ${{ secrets.ONESIGNAL_APP_ID_PROD }}
+          UPDATE_MANIFEST_URL_PROD: ${{ secrets.UPDATE_MANIFEST_URL_PROD }}
+        shell: bash
+        run: |
+          MANIFEST_URL="${UPDATE_MANIFEST_URL_PROD:-${{ steps.vars.outputs.pages_manifest_url }}}"
+          flutter build apk \
+            --release \
+            --split-per-abi \
+            --dart-define=SUPABASE_URL="${SUPABASE_URL_PROD}" \
+            --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY_PROD}" \
+            --dart-define=ONESIGNAL_APP_ID="${ONESIGNAL_APP_ID_PROD}" \
+            --dart-define=UPDATE_MANIFEST_URL="${MANIFEST_URL}"
+
+      - name: Prepare release assets and enforce APK size
+        env:
+          VERSION_NAME: ${{ steps.vars.outputs.version_name }}
+        shell: bash
+        run: |
+          mkdir -p release_assets
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "release_assets/app-v${VERSION_NAME}-arm64-v8a.apk"
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "release_assets/app-v${VERSION_NAME}-armeabi-v7a.apk"
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk "release_assets/app-v${VERSION_NAME}-x86_64.apk"
+
+          MAX_SIZE=41943040
+          {
+            echo "APK Size Report (<40MB required)"
+            echo ""
+          } > release_assets/size-summary.txt
+
+          for apk in release_assets/*.apk; do
+            bytes="$(stat -c%s "$apk")"
+            mb="$(awk "BEGIN {printf \"%.2f\", ${bytes}/1024/1024}")"
+            echo "$(basename "$apk"): ${mb} MB (${bytes} bytes)" >> release_assets/size-summary.txt
+            if [ "$bytes" -ge "$MAX_SIZE" ]; then
+              echo "::error::$(basename "$apk") melebihi batas 40MB"
+              exit 1
+            fi
+          done
+
+          sha256sum release_assets/*.apk > release_assets/sha256sums.txt
+
+      - name: Generate latest.json for landing page + release
+        env:
+          VERSION_NAME: ${{ steps.vars.outputs.version_name }}
+          VERSION_CODE: ${{ steps.vars.outputs.version_code }}
+          TAG: ${{ steps.vars.outputs.tag }}
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_NOTES: ${{ github.event.inputs.release_notes }}
+          MIN_SUPPORTED_INPUT: ${{ github.event.inputs.min_supported_version_code }}
+          FORCE_UPDATE_OVERRIDE: ${{ github.event.inputs.force_update_override }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          version_name = os.environ["VERSION_NAME"]
+          version_code = int(os.environ["VERSION_CODE"])
+          tag = os.environ["TAG"]
+          repository = os.environ["REPOSITORY"]
+          release_notes = os.environ.get("RELEASE_NOTES", "").strip()
+          min_supported_input = os.environ.get("MIN_SUPPORTED_INPUT", "").strip()
+          force_override = os.environ.get("FORCE_UPDATE_OVERRIDE", "false").lower() == "true"
+
+          previous_manifest_path = Path("distribution_site/latest.json")
+          previous = {}
+          if previous_manifest_path.exists():
+            previous = json.loads(previous_manifest_path.read_text(encoding="utf-8"))
+
+          prev_version_name = str(previous.get("latest_version_name", "0.0.0"))
+          prev_major = int(prev_version_name.split(".")[0] or "0")
+          new_major = int(version_name.split(".")[0] or "0")
+
+          if min_supported_input:
+            min_supported = int(min_supported_input)
+          else:
+            min_supported = int(previous.get("min_supported_version_code", version_code))
+            min_supported = min(min_supported, version_code)
+
+          force_update = force_override or (new_major > prev_major) or (version_code < min_supported)
+
+          assets = {
+            "arm64-v8a": f"app-v{version_name}-arm64-v8a.apk",
+            "armeabi-v7a": f"app-v{version_name}-armeabi-v7a.apk",
+            "x86_64": f"app-v{version_name}-x86_64.apk",
+          }
+
+          downloads = {}
+          for abi, filename in assets.items():
+            path = Path("release_assets") / filename
+            payload = path.read_bytes()
+            downloads[abi] = {
+              "url": f"https://github.com/{repository}/releases/download/{tag}/{filename}",
+              "sha256": hashlib.sha256(payload).hexdigest(),
+              "size_bytes": len(payload),
+            }
+
+          latest = {
+            "latest_version_name": version_name,
+            "latest_version_code": version_code,
+            "min_supported_version_code": min_supported,
+            "force_update": force_update,
+            "release_notes": release_notes,
+            "published_at": datetime.now(timezone.utc).isoformat(),
+            "downloads": downloads,
+          }
+
+          out = json.dumps(latest, indent=2, ensure_ascii=False)
+          Path("distribution_site/latest.json").write_text(out + "\n", encoding="utf-8")
+          Path("release_assets/latest.json").write_text(out + "\n", encoding="utf-8")
+          Path("release_assets/release-notes.txt").write_text(
+            f"Version: {version_name}+{version_code}\nTag: {tag}\n\n{release_notes}\n",
+            encoding="utf-8",
+          )
+          PY
+
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.vars.outputs.tag }}
+          name: Release ${{ steps.vars.outputs.version_name }}+${{ steps.vars.outputs.version_code }}
+          body_path: release_assets/release-notes.txt
+          files: |
+            release_assets/*.apk
+            release_assets/latest.json
+            release_assets/sha256sums.txt
+            release_assets/size-summary.txt
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: distribution_site
+
+  deploy_pages:
+    runs-on: ubuntu-latest
+    needs: build_release
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
