@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengumuman Desa Mobile</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Konfigurasi Kustom Tailwind (Gaya PostNord) -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#0e9f90', // Warna Teal Utama
+                        primaryLight: '#e6f7f5',
+                        secondary: '#fc9e32', // Warna Oranye
+                        darkText: '#1f2937',
+                        footerBg: '#0f172a',
+                        skyBlue: '#c7e9f7'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Sembunyikan scrollbar pada mockup ponsel */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+        }
+    </style>
+</head>
+<body class="font-sans text-gray-600 antialiased bg-gray-50 overflow-x-hidden">
+
+    <!-- Navigasi -->
+    <nav class="w-full absolute top-0 z-50 py-4 px-6 md:px-12 lg:px-24 flex justify-between items-center bg-white/80 backdrop-blur-md md:bg-transparent md:backdrop-blur-none border-b md:border-none border-gray-200">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-xl">
+                <i class="fa-solid fa-bullhorn text-sm"></i>
+            </div>
+            <a href="#home" class="font-bold text-xl text-darkText tracking-tight">PengumumanDesa</a>
+        </div>
+
+        <!-- Tombol Menu Mobile -->
+        <button id="menuButton" aria-label="Buka menu" aria-expanded="false" class="rounded-xl border border-gray-200 p-2 text-primary md:hidden bg-white" type="button">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+
+        <!-- Menu Desktop & Mobile -->
+        <div id="menu" class="hidden absolute md:relative top-full left-0 w-full md:w-auto bg-white md:bg-white/70 md:backdrop-blur-md md:rounded-full px-6 py-4 md:py-2 shadow-lg md:shadow-sm md:flex flex-col md:flex-row gap-4 md:gap-8 text-sm font-medium border-b md:border-none border-gray-100">
+            <a href="#home" class="text-primary font-semibold block md:inline-block">Home</a>
+            <a href="#about" class="hover:text-primary transition text-gray-600 block md:inline-block">About</a>
+            <a href="#features" class="hover:text-primary transition text-gray-600 block md:inline-block">Features</a>
+            <a href="#download" class="hover:text-primary transition text-gray-600 block md:inline-block">Download</a>
+        </div>
+
+        <div class="hidden md:block">
+            <a href="./install-android.html" class="bg-primary hover:bg-teal-600 text-white px-6 py-2.5 rounded-full text-sm font-medium transition shadow-md shadow-primary/30">
+                Cara Instal
+            </a>
+        </div>
+    </nav>
+
+    <main class="w-full">
+        <!-- Bagian Hero (Home) -->
+        <section id="home" class="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden bg-gradient-to-b from-skyBlue/40 to-white min-h-[90vh] flex flex-col items-center">
+            <!-- Elemen Latar Belakang Pemandangan (CSS) -->
+            <div class="absolute w-[200%] md:w-[120%] h-[400px] bg-[#95d5b2] rounded-[100%] bottom-[-150px] left-1/2 -translate-x-1/2 z-0"></div>
+            <div class="absolute w-[250%] md:w-[150%] h-[350px] bg-[#52b788] rounded-[100%] bottom-[-200px] left-1/2 -translate-x-1/2 z-0"></div>
+            <div class="absolute w-[300%] md:w-[200%] h-[200px] bg-[#40916c] rounded-[100%] bottom-[-100px] left-1/2 -translate-x-1/2 z-0"></div>
+            
+            <!-- Matahari & Awan -->
+            <div class="absolute top-32 right-20 w-16 h-16 bg-red-400/80 rounded-full blur-sm z-0"></div>
+            <div class="absolute top-40 left-32 text-white/80 z-0"><i class="fa-solid fa-cloud text-5xl"></i></div>
+            <div class="absolute top-24 right-48 text-white/60 z-0"><i class="fa-solid fa-cloud text-3xl"></i></div>
+
+            <!-- Konten Hero -->
+            <div class="relative z-10 text-center max-w-3xl mx-auto px-4 mt-8 md:mt-0">
+                <p class="font-bold text-xs uppercase tracking-[0.2em] text-primary mb-4">Aplikasi Mobile Desa</p>
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-darkText leading-tight mb-6">
+                    Info <span class="bg-secondary text-white px-4 py-1 rounded-full inline-block transform -rotate-2">warga</span> lebih cepat.
+                </h1>
+                <p class="text-gray-700 font-medium mb-8 max-w-xl mx-auto">
+                    Publikasi pengumuman, notifikasi real-time, dan update kegiatan desa dalam satu aplikasi ringan.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row justify-center gap-4 mb-16">
+                    <a href="#download" class="bg-primary text-white flex items-center justify-center gap-2 px-8 py-3.5 rounded-full hover:bg-teal-600 transition shadow-lg shadow-primary/30 font-bold">
+                        <i class="fa-solid fa-download"></i> Download APK
+                    </a>
+                    <a href="./update-guide.html" class="bg-white text-darkText flex items-center justify-center gap-2 px-8 py-3.5 rounded-full hover:bg-gray-50 transition shadow-lg font-bold border border-gray-100">
+                        <i class="fa-solid fa-book"></i> Panduan Update
+                    </a>
+                </div>
+            </div>
+
+            <!-- Mockup Ponsel Tengah -->
+            <div class="relative z-20 mt-4 animate-[bounce_4s_ease-in-out_infinite]">
+                <div class="w-[260px] h-[550px] bg-white border-[10px] border-darkText rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                    <!-- Poni Ponsel -->
+                    <div class="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-5 bg-darkText rounded-full z-30"></div>
+                    
+                    <!-- Layar Aplikasi -->
+                    <div class="w-full h-full bg-gray-50 flex flex-col pt-10">
+                        <div class="px-4 pb-2 border-b bg-white">
+                            <div class="flex justify-between items-center mb-4">
+                                <i class="fa-solid fa-bars text-gray-400"></i>
+                                <span class="font-semibold text-sm text-primary">Pengumuman</span>
+                                <div class="w-6 h-6 bg-gray-200 rounded-full overflow-hidden">
+                                    <img src="https://randomuser.me/api/portraits/women/44.jpg" class="w-full h-full object-cover">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Konten Dalam Ponsel (Diadaptasi dari kode asli) -->
+                        <div class="flex-1 bg-skyBlue/20 relative overflow-hidden p-4 overflow-y-auto no-scrollbar">
+                            
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3 mb-3 relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
+                                <p class="text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Pengumuman Hari Ini</p>
+                                <p class="text-xs font-bold text-darkText">Posyandu Balita - Minggu 08.00 WIB</p>
+                                <p class="text-[10px] text-gray-500 mt-2"><i class="fa-regular fa-clock"></i> 2 Jam yang lalu</p>
+                            </div>
+                            
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3 mb-3 relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+                                <p class="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">Infrastruktur</p>
+                                <p class="text-xs font-bold text-darkText">Perbaikan jalan RT 03 dimulai Senin.</p>
+                                <p class="text-[10px] text-gray-500 mt-2"><i class="fa-regular fa-clock"></i> 1 Hari yang lalu</p>
+                            </div>
+                            
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3 mb-3 relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
+                                <p class="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-1">Notifikasi</p>
+                                <p class="text-xs font-bold text-darkText">Aktif langsung saat admin publish.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bagian About -->
+        <section id="about" class="py-24 px-6 relative bg-[#d6f0fb]">
+            <!-- Awan CSS -->
+            <div class="absolute top-10 left-20 text-white opacity-70"><i class="fa-solid fa-cloud text-4xl"></i></div>
+            <div class="absolute top-32 right-32 text-white opacity-50"><i class="fa-solid fa-cloud text-6xl"></i></div>
+
+            <div class="max-w-6xl mx-auto relative z-10">
+                <div class="text-center mb-16">
+                    <span class="text-secondary font-bold text-sm tracking-wider uppercase mb-2 block">About App</span>
+                    <h2 class="text-3xl md:text-4xl font-bold text-darkText mb-4">Komunikasi Desa Lebih Tertata</h2>
+                    <p class="text-gray-600 max-w-2xl mx-auto">Pengumuman Desa membantu perangkat desa dan warga agar informasi penting tersampaikan cepat, terdokumentasi, dan mudah dicari.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Kartu 1 -->
+                    <article class="bg-white p-8 rounded-3xl shadow-lg relative mt-8 hover:-translate-y-2 transition duration-300">
+                        <div class="w-16 h-16 rounded-full bg-primaryLight text-primary flex items-center justify-center text-2xl absolute -top-8 left-1/2 -translate-x-1/2 shadow-md">
+                            <i class="fa-solid fa-laptop-code"></i>
+                        </div>
+                        <div class="text-center mt-6">
+                            <h4 class="font-bold text-darkText text-lg mb-2">Admin Dashboard</h4>
+                            <p class="text-sm text-gray-600">Kelola pengumuman, gambar, dan status publish dari panel admin dengan mudah.</p>
+                        </div>
+                    </article>
+
+                    <!-- Kartu 2 -->
+                    <article class="bg-white p-8 rounded-3xl shadow-lg relative mt-8 hover:-translate-y-2 transition duration-300">
+                        <div class="w-16 h-16 rounded-full bg-orange-100 text-secondary flex items-center justify-center text-2xl absolute -top-8 left-1/2 -translate-x-1/2 shadow-md">
+                            <i class="fa-solid fa-bell"></i>
+                        </div>
+                        <div class="text-center mt-6">
+                            <h4 class="font-bold text-darkText text-lg mb-2">Notifikasi Warga</h4>
+                            <p class="text-sm text-gray-600">Pengumuman baru otomatis dikirim ke perangkat warga secara real-time.</p>
+                        </div>
+                    </article>
+
+                    <!-- Kartu 3 -->
+                    <article class="bg-white p-8 rounded-3xl shadow-lg relative mt-8 hover:-translate-y-2 transition duration-300">
+                        <div class="w-16 h-16 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center text-2xl absolute -top-8 left-1/2 -translate-x-1/2 shadow-md">
+                            <i class="fa-solid fa-download"></i>
+                        </div>
+                        <div class="text-center mt-6">
+                            <h4 class="font-bold text-darkText text-lg mb-2">Distribusi Mandiri</h4>
+                            <p class="text-sm text-gray-600">APK resmi tersedia di halaman ini dengan sistem update manifest langsung.</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bagian Features 1 -->
+        <section id="features" class="py-24 px-6 md:px-12 lg:px-24 bg-white relative">
+            <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+                
+                <!-- Teks -->
+                <div class="order-2 md:order-1">
+                    <span class="text-secondary font-bold text-sm tracking-wider uppercase mb-2 block">Main Features</span>
+                    <h2 class="text-3xl md:text-4xl font-bold text-darkText mb-6 leading-tight">Pengiriman Informasi Cepat & Stabil</h2>
+                    <p class="text-gray-600 mb-8 leading-relaxed">
+                        Saat admin publish, pengumuman langsung muncul di home warga lengkap dengan kategori, tanggal, dan gambar. Tidak perlu lagi menunggu pesan berantai di grup chat.
+                    </p>
+                </div>
+
+                <!-- Visual (Mockup Ponsel + Kartu Melayang) -->
+                <div class="order-1 md:order-2 relative flex justify-center">
+                    <!-- Latar belakang lingkaran abstrak -->
+                    <div class="absolute w-80 h-80 bg-primaryLight rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10"></div>
+                    
+                    <div class="w-[260px] h-[550px] bg-white border-[10px] border-darkText rounded-[2.5rem] shadow-xl relative overflow-hidden">
+                        <div class="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-5 bg-darkText rounded-full z-30"></div>
+                        <div class="w-full h-full bg-gray-50 pt-12 px-4 pb-4 overflow-y-auto no-scrollbar">
+                            <h4 class="font-bold mb-4 text-sm">Pilih Kategori</h4>
+                            
+                            <!-- UI Kategori -->
+                            <div class="grid grid-cols-2 gap-3 mb-6">
+                                <div class="bg-primaryLight/50 p-3 rounded-xl border border-primary/20 text-center">
+                                    <i class="fa-solid fa-users text-primary mb-2 text-lg"></i>
+                                    <div class="text-xs font-bold text-primary">Umum</div>
+                                </div>
+                                <div class="bg-blue-50 p-3 rounded-xl border border-blue-200 text-center">
+                                    <i class="fa-solid fa-heart-pulse text-blue-500 mb-2 text-lg"></i>
+                                    <div class="text-xs font-bold text-blue-600">Kesehatan</div>
+                                </div>
+                                <div class="bg-orange-50 p-3 rounded-xl border border-orange-200 text-center">
+                                    <i class="fa-solid fa-calendar-star text-secondary mb-2 text-lg"></i>
+                                    <div class="text-xs font-bold text-orange-600">Acara</div>
+                                </div>
+                                <div class="bg-green-50 p-3 rounded-xl border border-green-200 text-center">
+                                    <i class="fa-solid fa-money-bill-wave text-green-600 mb-2 text-lg"></i>
+                                    <div class="text-xs font-bold text-green-700">Keuangan</div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex items-start gap-3 opacity-60">
+                                <div class="w-10 h-10 bg-gray-100 rounded-lg shrink-0"></div>
+                                <div class="flex-1 space-y-2 py-1">
+                                    <div class="h-2 bg-gray-200 rounded w-3/4"></div>
+                                    <div class="h-2 bg-gray-200 rounded w-1/2"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kartu Notifikasi Melayang -->
+                    <div class="absolute top-1/3 -left-10 md:-left-16 bg-white p-4 rounded-xl shadow-2xl border border-gray-100 flex items-center gap-4 w-60 animate-bounce" style="animation-duration: 3s;">
+                        <div class="w-10 h-10 bg-secondary/20 rounded-full flex items-center justify-center text-secondary shrink-0">
+                            <i class="fa-solid fa-bell"></i>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Info Baru</div>
+                            <div class="text-xs font-bold text-darkText leading-tight">Jadwal Kerja Bakti RT 04</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bagian Features 2 -->
+        <section class="py-24 px-6 md:px-12 lg:px-24 bg-gray-50 relative overflow-hidden">
+            <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+                
+                <!-- Visual -->
+                <div class="relative flex justify-center">
+                    <div class="absolute w-80 h-80 bg-blue-100 rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10"></div>
+                    
+                    <div class="w-[260px] h-[550px] bg-white border-[10px] border-darkText rounded-[2.5rem] shadow-xl relative overflow-hidden">
+                        <div class="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-5 bg-darkText rounded-full z-30"></div>
+                        <div class="w-full h-full bg-white pt-12 flex flex-col">
+                            <div class="px-4 pb-4 border-b border-gray-100">
+                                <!-- Search Bar -->
+                                <div class="bg-gray-100 rounded-xl p-2.5 flex items-center gap-2 mb-4">
+                                    <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm pl-2"></i>
+                                    <input type="text" placeholder="Cari pengumuman..." class="bg-transparent text-xs w-full outline-none">
+                                </div>
+                                <h4 class="font-bold text-xs mb-3 text-gray-500 uppercase">Search & Filter</h4>
+                                <p class="text-xs text-gray-600 font-medium">Cari pengumuman dengan filter kategori atau tanggal tertentu.</p>
+                            </div>
+                            
+                            <div class="flex-1 bg-gray-50 p-4 relative">
+                                <h4 class="font-bold text-xs mb-3 text-gray-500 uppercase">Image Preview</h4>
+                                <!-- Placeholder Gambar -->
+                                <div class="w-full h-32 bg-gray-200 rounded-xl mb-2 flex items-center justify-center relative overflow-hidden">
+                                    <i class="fa-regular fa-image text-gray-400 text-3xl"></i>
+                                    <div class="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 hover:opacity-100 transition cursor-pointer">
+                                        <i class="fa-solid fa-magnifying-glass-plus text-white text-2xl"></i>
+                                    </div>
+                                </div>
+                                <p class="text-[10px] text-gray-500 text-center">Ketuk gambar untuk Zoom In/Out</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Teks -->
+                <div>
+                    <span class="text-secondary font-bold text-sm tracking-wider uppercase mb-2 block">Why This App</span>
+                    <h2 class="text-3xl md:text-4xl font-bold text-darkText mb-6 leading-tight">Bantu Warga Dapat Info Tepat</h2>
+                    <p class="text-gray-600 mb-8 leading-relaxed">
+                        Semua update desa terkumpul rapi di satu tempat, tidak tercecer di grup chat yang ramai, dan sangat mudah ditelusuri kapan saja dibutuhkan.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bagian Download (CTA Bawah) -->
+        <section id="download" class="relative pt-24 pb-0 overflow-hidden bg-gradient-to-b from-skyBlue to-blue-200">
+            
+            <!-- Pemandangan Latar (Pohon dan Bukit) -->
+            <div class="absolute bottom-0 w-full h-48 bg-gradient-to-t from-green-500 to-green-400 z-0"></div>
+            <div class="absolute bottom-20 left-10 w-64 h-64 bg-green-600 rounded-full blur-[2px] z-0 opacity-80"></div>
+            <div class="absolute bottom-10 right-20 w-48 h-48 bg-green-500 rounded-full blur-[1px] z-0 opacity-90"></div>
+            
+            <!-- Batang Pohon Kiri -->
+            <div class="absolute bottom-0 left-32 w-12 h-64 bg-amber-900 z-10 rounded-t-lg"></div>
+            <div class="absolute bottom-24 left-10 w-56 h-56 bg-green-700 rounded-full z-10"></div>
+            <div class="absolute bottom-32 left-24 w-40 h-40 bg-green-600 rounded-full z-10"></div>
+
+            <!-- Konten -->
+            <div class="relative z-20 text-center max-w-4xl mx-auto px-4 pb-20 md:pb-32">
+                <span class="text-secondary font-bold text-sm tracking-wider uppercase mb-2 block">Download</span>
+                <h2 class="text-3xl md:text-4xl font-bold text-darkText mb-4">Download Pengumuman Desa App</h2>
+                <p class="text-gray-700 mb-6 max-w-2xl mx-auto">
+                    Pilih file APK sesuai arsitektur device untuk performa terbaik dan ukuran lebih ringan.
+                </p>
+                
+                <!-- Info Versi JSON -->
+                <div class="flex flex-wrap justify-center gap-3 text-xs font-bold text-primary mb-6">
+                    <span id="latestVersion" class="rounded-full bg-white px-4 py-1.5 shadow-sm">Versi: -</span>
+                    <span id="latestCode" class="rounded-full bg-white px-4 py-1.5 shadow-sm">Build: -</span>
+                    <span id="releaseDate" class="rounded-full bg-white px-4 py-1.5 shadow-sm">Rilis: -</span>
+                </div>
+                
+                <p id="releaseNotes" class="mx-auto max-w-2xl rounded-2xl bg-white/90 px-6 py-4 text-center text-sm font-medium text-gray-700 shadow-sm mb-8 backdrop-blur-sm">
+                    Memuat catatan rilis...
+                </p>
+
+                <!-- Grid Download APK -->
+                <div id="androidGrid" class="grid gap-4 md:grid-cols-3 mb-8">
+                    <!-- Data akan di-render oleh JavaScript di sini -->
+                </div>
+
+                <div class="mt-4 inline-block rounded-full border border-orange-300 bg-orange-100/90 backdrop-blur-sm px-6 py-3 text-center text-sm font-bold text-orange-700 shadow-sm">
+                    <i class="fa-brands fa-apple mr-2"></i> iOS: Coming Soon (rencana distribusi TestFlight)
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-footerBg text-white pt-20 pb-8 px-6 md:px-12 lg:px-24">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+            
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-xl">
+                        <i class="fa-solid fa-bullhorn text-sm"></i>
+                    </div>
+                    <span class="font-bold text-xl text-white tracking-tight">PengumumanDesa</span>
+                </div>
+                <p class="text-sm font-medium text-gray-400 leading-relaxed">
+                    Distribusi mandiri APK untuk kebutuhan internal desa dan komunitas. Informasi lebih cepat, tepat, dan mudah diakses.
+                </p>
+            </div>
+
+            <div>
+                <h4 class="font-bold mb-6 text-gray-300">Quick Links</h4>
+                <ul class="space-y-4 text-sm text-gray-400 font-medium">
+                    <li><a href="./install-android.html" class="hover:text-primary transition">Cara Instal APK</a></li>
+                    <li><a href="./update-guide.html" class="hover:text-primary transition">Cara Update Aplikasi</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="font-bold mb-6 text-gray-300">Status Sistem</h4>
+                <p class="text-sm font-medium text-gray-400 leading-relaxed">
+                    Versi dan link download pada halaman ini diambil dari file <code>latest.json</code> secara otomatis untuk memastikan Anda selalu mendapatkan versi terbaru.
+                </p>
+            </div>
+        </div>
+        
+        <div class="border-t border-gray-800 pt-8 mt-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
+            <p>&copy; 2026 Pengumuman Desa Mobile. Seluruh hak cipta dilindungi.</p>
+            <p class="mt-2 md:mt-0">Desain Ulang dengan Gaya PostNord</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Asli Anda (Dengan sedikit penyesuaian kelas Tailwind untuk elemen dinamis) -->
+    <script>
+        const ABI_LABELS = {
+            "arm64-v8a": "Android ARM64",
+            "armeabi-v7a": "Android ARMv7",
+            "x86_64": "Android x86_64",
+        };
+        const ABI_HINTS = {
+            "arm64-v8a": "Cocok untuk mayoritas HP Android terbaru",
+            "armeabi-v7a": "Cocok untuk HP Android versi lama",
+            "x86_64": "Cocok untuk emulator/perangkat tertentu",
+        };
+
+        function formatBytes(bytes) {
+            if (!bytes || bytes <= 0) return "Belum tersedia";
+            const mb = bytes / (1024 * 1024);
+            return `${mb.toFixed(1)} MB`;
+        }
+
+        function renderAndroidDownloads(downloads) {
+            const grid = document.getElementById("androidGrid");
+            grid.innerHTML = "";
+
+            Object.entries(downloads || {}).forEach(([abi, item]) => {
+                const hasDownload = typeof item?.url === "string" && item.url.trim().length > 0;
+                const card = document.createElement("article");
+                // Menyesuaikan class Tailwind agar cocok dengan desain PostNord
+                card.className = "bg-white p-6 rounded-3xl shadow-xl relative border border-gray-100 z-10 hover:-translate-y-1 transition duration-300 text-left";
+                card.innerHTML = `
+                    <h4 class="font-bold text-lg text-darkText mb-2">${ABI_LABELS[abi] || abi}</h4>
+                    <p class="text-sm font-medium text-gray-500 mb-4">${ABI_HINTS[abi] || "APK split khusus arsitektur ini agar ukuran lebih hemat."}</p>
+                    <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                        <p class="text-xs font-bold text-primary mb-1">Ukuran File APK: ${formatBytes(item.size_bytes)}</p>
+                        <p class="text-[10px] font-medium text-gray-400 truncate">SHA256: ${(item.sha256 || "-")}</p>
+                    </div>
+                    ${
+                        hasDownload
+                            ? `<a href="${item.url}" target="_blank" rel="noopener"
+                                class="block w-full text-center rounded-full bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-teal-600 shadow-md shadow-primary/20">
+                                <i class="fa-solid fa-download mr-1"></i> Download APK
+                               </a>`
+                            : `<span
+                                class="block w-full cursor-not-allowed text-center rounded-full bg-gray-300 px-4 py-2.5 text-sm font-bold text-gray-600">
+                                File Belum Tersedia
+                               </span>`
+                    }
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        async function loadLatest() {
+            // Simulasi fetch untuk preview (Karena file latest.json tidak ada di lingkungan ini)
+            // Hapus blok try-catch mock ini dan gunakan kode asli Anda di produksi
+            try {
+                const response = await fetch("./latest.json", { cache: "no-store" });
+                if (!response.ok) throw new Error("Gagal memuat latest.json");
+                const data = await response.json();
+                updateUI(data);
+            } catch (e) {
+                console.log("Menggunakan data dummy karena latest.json tidak ditemukan:", e.message);
+                const dummyData = {
+                    latest_version_name: "1.0.5",
+                    latest_version_code: 15,
+                    published_at: "2026-05-25T10:00:00Z",
+                    release_notes: "Perbaikan bug notifikasi pada Android 13 dan penambahan fitur filter kategori acara.",
+                    downloads: {
+                        "arm64-v8a": { size_bytes: 15400000, sha256: "a1b2c3d4e5f6g7h8", url: "#" },
+                        "armeabi-v7a": { size_bytes: 14200000, sha256: "z9y8x7w6v5u4t3s2", url: "#" }
+                    }
+                };
+                updateUI(dummyData);
+            }
+        }
+
+        function updateUI(data) {
+            document.getElementById("latestVersion").textContent = `Versi: ${data.latest_version_name || "-"}`;
+            document.getElementById("latestCode").textContent = `Build: ${data.latest_version_code || "-"}`;
+            document.getElementById("releaseDate").textContent = `Rilis: ${data.published_at ? new Date(data.published_at).toLocaleDateString("id-ID") : "-"}`;
+            document.getElementById("releaseNotes").textContent = data.release_notes || "Belum ada catatan rilis.";
+            renderAndroidDownloads(data.downloads);
+        }
+
+        function initMobileMenu() {
+            const button = document.getElementById("menuButton");
+            const menu = document.getElementById("menu");
+            if (!button || !menu) return;
+
+            button.addEventListener("click", () => {
+                const isOpen = !menu.classList.contains("hidden");
+                menu.classList.toggle("hidden");
+                button.setAttribute("aria-expanded", String(!isOpen));
+            });
+
+            menu.querySelectorAll("a").forEach((link) => {
+                link.addEventListener("click", () => {
+                    if (window.innerWidth < 768) {
+                        menu.classList.add("hidden");
+                        button.setAttribute("aria-expanded", "false");
+                    }
+                });
+            });
+        }
+
+        initMobileMenu();
+        loadLatest().catch((error) => {
+            document.getElementById("releaseNotes").textContent = `Tidak bisa memuat data rilis: ${error.message}`;
+        });
+    </script>
+</body>
+</html>
