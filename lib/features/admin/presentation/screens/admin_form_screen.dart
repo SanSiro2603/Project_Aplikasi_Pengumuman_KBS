@@ -343,6 +343,72 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
           onPressed: () => context.go('/admin'),
         ),
       ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, -6),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'Status',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const Spacer(),
+                  ChoiceChip(
+                    label: const Text('Draft'),
+                    selected: _status == 'draft',
+                    onSelected: _isLoading
+                        ? null
+                        : (_) => setState(() => _status = 'draft'),
+                  ),
+                  const SizedBox(width: 8),
+                  ChoiceChip(
+                    label: const Text('Published'),
+                    selected: _status == 'published',
+                    onSelected: _isLoading
+                        ? null
+                        : (_) => setState(() => _status = 'published'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E9E58),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  onPressed: _isLoading ? null : _saveAnnouncement,
+                  icon: const Icon(HugeIcons.strokeRoundedFileUpload),
+                  label: const Text(
+                    'Simpan Pengumuman',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -484,69 +550,6 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
                           ],
                         ),
                       ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF8CB7A0).withValues(alpha: 0.12),
-                        blurRadius: 14,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Status',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 10,
-                        children: [
-                          ChoiceChip(
-                            label: const Text('Draft'),
-                            selected: _status == 'draft',
-                            onSelected: (_) =>
-                                setState(() => _status = 'draft'),
-                          ),
-                          ChoiceChip(
-                            label: const Text('Published'),
-                            selected: _status == 'published',
-                            onSelected: (_) =>
-                                setState(() => _status = 'published'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E9E58),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    onPressed: _saveAnnouncement,
-                    icon: const Icon(HugeIcons.strokeRoundedFileUpload),
-                    label: const Text(
-                      'Simpan Pengumuman',
-                      style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),

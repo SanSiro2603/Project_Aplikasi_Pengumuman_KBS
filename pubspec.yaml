@@ -54,6 +54,7 @@ dependencies:
   package_info_plus: ^8.3.1
   device_info_plus: ^11.5.0
   url_launcher: ^6.3.2
+  expandable_text: ^2.3.0
 
 dev_dependencies:
   flutter_test:

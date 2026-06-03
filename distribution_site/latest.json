@@ -3,13 +3,13 @@
   "latest_version_code": 1,
   "min_supported_version_code": 1,
   "force_update": false,
-  "release_notes": "Rilis awal distribusi mandiri.",
-  "published_at": "2026-05-29T00:00:00Z",
+  "release_notes": "Pembaruan stabilitas dan peningkatan UX kartu pengumuman (expand/collapse konten).",
+  "published_at": "2026-05-30T18:30:00Z",
   "downloads": {
     "arm64-v8a": {
-      "url": "",
-      "sha256": "",
-      "size_bytes": 0
+      "url": "./downloads/app-release.apk",
+      "sha256": "40cded7f18ea6930fe429e0d1b54e3c33e1e818e1a6f1c041c225e63a6aa740a",
+      "size_bytes": 21856315
     },
     "armeabi-v7a": {
       "url": "",

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:expandable_text/expandable_text.dart';
 import '../../../announcement/data/models/announcement_model.dart';
 import 'zoomable_image_viewer.dart';
 
@@ -99,11 +100,13 @@ class AnnouncementCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  ExpandableText(
                     announcement.content,
-                    style: theme.textTheme.bodyMedium,
                     maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
+                    expandText: 'Baca selengkapnya',
+                    collapseText: 'Tutup',
+                    linkColor: theme.colorScheme.primary,
+                    style: theme.textTheme.bodyMedium,
                   ),
                 ],
               ),
