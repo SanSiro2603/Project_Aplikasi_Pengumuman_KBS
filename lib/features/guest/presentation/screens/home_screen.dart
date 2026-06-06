@@ -6,10 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/notifications/notification_service.dart';
+import '../../../../core/ui/app_feedback.dart';
 import '../../../../core/update/app_update_service.dart';
 import '../../../announcement/data/models/announcement_model.dart';
 import '../../../announcement/presentation/providers/announcement_provider.dart';
@@ -213,15 +215,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           await NotificationService.requestPermissionAndRegisterToken();
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            granted
-                ? 'Notifikasi aktif. Anda akan menerima pengumuman baru.'
-                : 'Izin notifikasi ditolak oleh sistem.',
-          ),
-        ),
-      );
+      if (granted) {
+        AppFeedback.success(
+          context,
+          'Notifikasi aktif. Anda akan menerima pengumuman baru.',
+        );
+      } else {
+        AppFeedback.error(context, 'Izin notifikasi ditolak oleh sistem.');
+      }
     } else {
       await NotificationService.syncSettingsFromLocal();
     }
@@ -369,12 +370,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   false,
                                 );
                                 if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Izin notifikasi ditolak oleh sistem.',
-                                    ),
-                                  ),
+                                AppFeedback.error(
+                                  context,
+                                  'Izin notifikasi ditolak oleh sistem.',
                                 );
                               }
                             } else {
@@ -548,10 +546,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   );
                 }
 
-                return RefreshIndicator(
+                return LiquidPullToRefresh(
                   onRefresh: () async {
                     ref.invalidate(announcementsProvider);
                   },
+                  color: Theme.of(context).colorScheme.primary,
+                  backgroundColor: Colors.white,
+                  showChildOpacityTransition: false,
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: filteredAnnouncements.length,

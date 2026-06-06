@@ -5,6 +5,7 @@ import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/auth/admin_access.dart';
 import '../../../../core/logging/app_logger.dart';
+import '../../../../core/ui/app_feedback.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -60,9 +61,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       );
       if (context.mounted) {
         final errorMessage = _mapLoginError(e);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(errorMessage)));
+        AppFeedback.error(context, errorMessage);
       }
     } catch (e) {
       await AppLogger.error(
@@ -72,9 +71,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       );
       if (context.mounted) {
         final errorMessage = _mapLoginError(e);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(errorMessage)));
+        AppFeedback.error(context, errorMessage);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

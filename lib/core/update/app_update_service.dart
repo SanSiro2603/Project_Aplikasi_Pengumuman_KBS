@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../config/app_config.dart';
 import '../logging/app_logger.dart';
+import '../ui/app_feedback.dart';
 import 'update_manifest.dart';
 
 class AppUpdateService {
@@ -81,11 +82,13 @@ class AppUpdateService {
     final forceByMinimum =
         currentVersionCode < manifest.minSupportedVersionCode;
     final forceByMajorJump = currentMajor < manifest.latestMajorVersion;
-    final forceUpdate = manifest.forceUpdate || forceByMinimum || forceByMajorJump;
+    final forceUpdate =
+        manifest.forceUpdate || forceByMinimum || forceByMajorJump;
 
     final deviceAbi = await _resolveDeviceAbi();
     final download =
-        manifest.selectDownload(deviceAbi) ?? manifest.downloads.values.firstOrNull;
+        manifest.selectDownload(deviceAbi) ??
+        manifest.downloads.values.firstOrNull;
     if (download == null || download.url.isEmpty) {
       await AppLogger.error(
         'update.download_missing',
@@ -103,7 +106,9 @@ class AppUpdateService {
       currentVersionCode: currentVersionCode,
       reason: forceByMinimum
           ? UpdateReason.minSupported
-          : (forceByMajorJump ? UpdateReason.majorUpgrade : UpdateReason.optional),
+          : (forceByMajorJump
+                ? UpdateReason.majorUpgrade
+                : UpdateReason.optional),
     );
   }
 
@@ -163,11 +168,7 @@ class AppUpdateService {
                     final uri = Uri.tryParse(decision.download.url);
                     if (uri == null) {
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Link update tidak valid.'),
-                          ),
-                        );
+                        AppFeedback.error(context, 'Link update tidak valid.');
                       }
                       return;
                     }
@@ -177,11 +178,7 @@ class AppUpdateService {
                       mode: LaunchMode.externalApplication,
                     );
                     if (!opened && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Gagal membuka link update.'),
-                        ),
-                      );
+                      AppFeedback.error(context, 'Gagal membuka link update.');
                     }
                     if (!decision.isForceUpdate && context.mounted) {
                       Navigator.of(context).pop();
@@ -238,11 +235,7 @@ class AppUpdateService {
         return abis.first;
       }
     } catch (error, stackTrace) {
-      await AppLogger.error(
-        'update.detect_abi',
-        error,
-        stackTrace: stackTrace,
-      );
+      await AppLogger.error('update.detect_abi', error, stackTrace: stackTrace);
     }
     return 'arm64-v8a';
   }
@@ -278,11 +271,7 @@ class UpdateDecision {
   final UpdateReason reason;
 }
 
-enum UpdateReason {
-  optional,
-  majorUpgrade,
-  minSupported,
-}
+enum UpdateReason { optional, majorUpgrade, minSupported }
 
 extension<T> on List<T> {
   T? get firstOrNull => isEmpty ? null : first;

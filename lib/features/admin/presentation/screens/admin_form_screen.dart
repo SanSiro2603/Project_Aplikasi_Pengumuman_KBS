@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/auth/admin_access.dart';
 import '../../../../core/logging/app_logger.dart';
+import '../../../../core/ui/app_feedback.dart';
 
 class AdminFormScreen extends StatefulWidget {
   final String? id;
@@ -72,9 +73,7 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading: $e')));
+        AppFeedback.error(context, 'Error loading: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -90,16 +89,12 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
     final imageSize = await pickedFile.length();
     if (ext.isNotEmpty && !_allowedExt.contains(ext)) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Format gambar $ext belum didukung.')),
-      );
+      AppFeedback.warning(context, 'Format gambar $ext belum didukung.');
       return;
     }
     if (imageSize > _maxInputImageBytes) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ukuran gambar maksimal 15MB.')),
-      );
+      AppFeedback.warning(context, 'Ukuran gambar maksimal 15MB.');
       return;
     }
 
@@ -110,19 +105,14 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
       setState(() => _selectedImage = compressedFile ?? pickedFile);
 
       if (compressedFile == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Gambar dipakai tanpa kompres karena format tidak didukung kompresor.',
-            ),
-          ),
+        AppFeedback.info(
+          context,
+          'Gambar dipakai tanpa kompres karena format tidak didukung kompresor.',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Compress error: $e')));
+        AppFeedback.error(context, 'Compress error: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -148,16 +138,12 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
 
   Future<void> _saveAnnouncement() async {
     if (!AdminAccess.isAdmin()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Akses ditolak. Hanya admin.')),
-      );
+      AppFeedback.error(context, 'Akses ditolak. Hanya admin.');
       return;
     }
 
     if (_titleController.text.isEmpty || _contentController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Isi judul dan konten')));
+      AppFeedback.warning(context, 'Isi judul dan konten');
       return;
     }
 
@@ -232,6 +218,7 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
       final shouldNotify =
           _status == 'published' &&
           (widget.id == null || _initialStatus != 'published');
+      // Notify only on the first transition to published to avoid duplicate pushes.
       if (shouldNotify) {
         await _triggerPublishNotification(
           id: announcementId,
@@ -253,9 +240,7 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
         },
       );
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Save error: $e')));
+        AppFeedback.error(context, 'Save error: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -269,6 +254,7 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
     String? imageUrl,
   }) async {
     try {
+      // The Edge Function also checks idempotency via notification_dispatch_log.
       await Supabase.instance.client.functions.invoke(
         'notify_warga',
         body: {
@@ -288,10 +274,9 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
         context: {'announcement_id': id, 'category': category},
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Pengumuman tersimpan, tapi push notifikasi gagal: $e'),
-        ),
+      AppFeedback.warning(
+        context,
+        'Pengumuman tersimpan, tapi push notifikasi gagal: $e',
       );
     }
   }

@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/auth/admin_access.dart';
 import '../../../../core/logging/app_logger.dart';
+import '../../../../core/ui/app_feedback.dart';
 import '../../../announcement/data/models/announcement_model.dart';
 import '../../../announcement/presentation/providers/announcement_provider.dart';
 import '../../../guest/presentation/widgets/zoomable_image_viewer.dart';
@@ -41,9 +42,7 @@ class AdminDashboardScreen extends ConsumerWidget {
     if (!context.mounted) return;
 
     context.go('/home');
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Berhasil logout.')));
+    AppFeedback.success(context, 'Berhasil logout.');
   }
 
   Future<void> _confirmAndDelete(
@@ -77,9 +76,7 @@ class AdminDashboardScreen extends ConsumerWidget {
     if (shouldDelete != true) return;
     if (!AdminAccess.isAdmin()) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Akses ditolak. Hanya admin.')),
-      );
+      AppFeedback.error(context, 'Akses ditolak. Hanya admin.');
       return;
     }
 
@@ -90,9 +87,7 @@ class AdminDashboardScreen extends ConsumerWidget {
           .eq('id', announcement.id);
       ref.invalidate(adminAnnouncementsProvider);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pengumuman berhasil dihapus.')),
-      );
+      AppFeedback.success(context, 'Pengumuman berhasil dihapus.');
     } catch (e) {
       await AppLogger.error(
         'admin_dashboard.delete_announcement',
@@ -100,9 +95,7 @@ class AdminDashboardScreen extends ConsumerWidget {
         context: {'announcement_id': announcement.id},
       );
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal menghapus: $e')));
+      AppFeedback.error(context, 'Gagal menghapus: $e');
     }
   }
 
