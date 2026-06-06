@@ -46,7 +46,7 @@ Aplikasi ini dibuat agar informasi penting seperti kegiatan warga, kesehatan, in
 
 ## 5. Dokumentasi Cepat
 
-Untuk teman atau developer baru, mulai dari dokumen ini:
+Untuk dokumentasi, mulai dari dokumen ini:
 
 | Dokumen | Fungsi |
 | --- | --- |
