@@ -15,9 +15,23 @@ type DispatchLogRow = {
   provider_status: string
 }
 
+type OneSignalFilter = {
+  field: 'tag'
+  key: string
+  relation: '=' | 'not_exists'
+  value?: string
+}
+
+type NotificationTarget = {
+  name: string
+  soundEnabled: boolean
+  filters: OneSignalFilter[]
+}
+
 const MAX_TITLE_LENGTH = 120
 const MAX_BODY_LENGTH = 220
 const MAX_RETRY = 3
+const CATEGORIES = ['umum', 'kesehatan', 'infrastruktur', 'keuangan', 'acara']
 
 function parseIncomingPayload(rawBody: string): Record<string, unknown> {
   if (!rawBody.trim()) {
@@ -41,9 +55,12 @@ function getOneSignalConfig() {
   const apiKey = Deno.env.get('ONESIGNAL_REST_API_KEY') ?? ''
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  const existingAndroidChannelId =
-    Deno.env.get('ONESIGNAL_EXISTING_ANDROID_CHANNEL_ID') ??
-    'announcement_channel_v2'
+  const soundAndroidChannelId =
+    Deno.env.get('ONESIGNAL_SOUND_ANDROID_CHANNEL_ID') ??
+    'announcement_channel_sound_v3'
+  const silentAndroidChannelId =
+    Deno.env.get('ONESIGNAL_SILENT_ANDROID_CHANNEL_ID') ??
+    'announcement_channel_silent_v1'
 
   if (!appId || !apiKey || !supabaseUrl || !supabaseKey) {
     throw new Error(
@@ -56,14 +73,9 @@ function getOneSignalConfig() {
     apiKey,
     supabaseUrl,
     supabaseKey,
-    existingAndroidChannelId,
+    soundAndroidChannelId,
+    silentAndroidChannelId,
   }
-}
-
-function isUuid(value: string): boolean {
-  const uuidV4Like =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-  return uuidV4Like.test(value)
 }
 
 function isValidImageUrl(value: string): boolean {
@@ -80,6 +92,88 @@ function shouldRetry(statusCode: number): boolean {
 
 async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function normalizeCategory(value: string): string {
+  const normalized = value.trim().toLowerCase()
+  if (CATEGORIES.includes(normalized)) return normalized
+  throw new Error(`Unsupported announcement category: ${value}`)
+}
+
+function tagFilter(key: string, value: string): OneSignalFilter {
+  return {
+    field: 'tag',
+    key,
+    relation: '=',
+    value,
+  }
+}
+
+function missingTagFilter(key: string): OneSignalFilter {
+  return {
+    field: 'tag',
+    key,
+    relation: 'not_exists',
+  }
+}
+
+function buildNotificationTargets(category: string): NotificationTarget[] {
+  const categorySoundTag = `sound_category_${category}`
+  const notifAllowed = tagFilter('notif_allowed', '1')
+
+  // Each target becomes one OneSignal request so Android can use the correct
+  // notification channel for sound or silent delivery.
+  return [
+    {
+      name: 'sound_legacy_untagged',
+      soundEnabled: true,
+      filters: [
+        missingTagFilter('notif_allowed'),
+      ],
+    },
+    {
+      name: 'sound_per_category',
+      soundEnabled: true,
+      filters: [
+        notifAllowed,
+        tagFilter('sound_mode_per_category', '1'),
+        tagFilter(categorySoundTag, '1'),
+      ],
+    },
+    {
+      name: 'sound_default',
+      soundEnabled: true,
+      filters: [
+        notifAllowed,
+        tagFilter('sound_mode_per_category', '0'),
+        tagFilter('sound_default_enabled', '1'),
+      ],
+    },
+    {
+      name: 'silent_per_category',
+      soundEnabled: false,
+      filters: [
+        notifAllowed,
+        tagFilter('sound_mode_per_category', '1'),
+        tagFilter(categorySoundTag, '0'),
+      ],
+    },
+    {
+      name: 'silent_default',
+      soundEnabled: false,
+      filters: [
+        notifAllowed,
+        tagFilter('sound_mode_per_category', '0'),
+        tagFilter('sound_default_enabled', '0'),
+      ],
+    },
+  ]
+}
+
+function getRecipientCount(response: unknown): number {
+  if (!response || typeof response !== 'object') return 0
+  const recipients = (response as { recipients?: unknown }).recipients
+  return typeof recipients === 'number' ? recipients : 0
 }
 
 async function upsertDispatchLog(
@@ -119,8 +213,9 @@ serve(async (req: Request) => {
       })
     }
 
+    const category = normalizeCategory(record.category)
     const title = truncate(record.title.trim(), MAX_TITLE_LENGTH)
-    const body = truncate(`Kategori: ${record.category}`, MAX_BODY_LENGTH)
+    const body = truncate(`Kategori: ${category}`, MAX_BODY_LENGTH)
     const imageUrl = (record.image_url ?? '').trim()
     const hasImage = imageUrl.length > 0 && isValidImageUrl(imageUrl)
 
@@ -128,8 +223,14 @@ serve(async (req: Request) => {
       throw new Error('image_url must be a valid http/https URL')
     }
 
-    const { appId, apiKey, supabaseKey, supabaseUrl, existingAndroidChannelId } =
-      getOneSignalConfig()
+    const {
+      appId,
+      apiKey,
+      supabaseKey,
+      supabaseUrl,
+      soundAndroidChannelId,
+      silentAndroidChannelId,
+    } = getOneSignalConfig()
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     const { data: existingLog } = await supabase
@@ -159,18 +260,7 @@ serve(async (req: Request) => {
       )
     }
 
-    let subscriptionIds: string[] = []
-    const { data: tokens } = await supabase.from('device_tokens').select('token')
-    subscriptionIds =
-      (tokens ?? [])
-        .map((row: { token?: string }) => (row.token ?? '').trim())
-        .filter((token) => token.length > 0 && isUuid(token))
-        .filter((token, index, arr) => arr.indexOf(token) === index)
-
-    const targetMode =
-      subscriptionIds.length > 0 ? 'include_subscription_ids' : 'included_segments'
-
-    const requestBody: Record<string, unknown> = {
+    const baseRequestBody: Record<string, unknown> = {
       app_id: appId,
       target_channel: 'push',
       headings: {
@@ -182,67 +272,95 @@ serve(async (req: Request) => {
       subtitle: { en: body },
       data: {
         announcement_id: String(record.id ?? ''),
-        category: String(record.category ?? ''),
+        category,
       },
-      android_sound: 'announcement_tone',
-    }
-
-    if (existingAndroidChannelId.trim().length > 0) {
-      requestBody.existing_android_channel_id = existingAndroidChannelId.trim()
     }
 
     if (hasImage) {
-      requestBody.big_picture = imageUrl
-      requestBody.ios_attachments = { image: imageUrl }
-      requestBody.chrome_web_image = imageUrl
+      baseRequestBody.big_picture = imageUrl
+      baseRequestBody.ios_attachments = { image: imageUrl }
+      baseRequestBody.chrome_web_image = imageUrl
     }
 
-    if (subscriptionIds.length > 0) {
-      requestBody.include_subscription_ids = subscriptionIds
-    } else {
-      requestBody.included_segments = ['Subscribed Users']
-    }
-
+    const targets = buildNotificationTargets(category)
+    const targetMode = 'onesignal_tag_filters_by_sound_preference'
+    const providerResponses: unknown[] = []
     let providerStatus = 'failed'
     let providerHttpStatus = 0
-    let providerResponse: unknown = null
     let lastError = ''
     let attempts = existingLog?.attempt_count ?? 0
+    let targetCount = 0
 
-    for (let attempt = 1; attempt <= MAX_RETRY; attempt++) {
-      attempts += 1
-      const pushResponse = await fetch('https://api.onesignal.com/notifications', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Key ${apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
+    for (const target of targets) {
+      const requestBody: Record<string, unknown> = {
+        ...baseRequestBody,
+        filters: target.filters,
+      }
+
+      const channelId = target.soundEnabled
+        ? soundAndroidChannelId.trim()
+        : silentAndroidChannelId.trim()
+      if (channelId.length > 0) {
+        requestBody.existing_android_channel_id = channelId
+      }
+      if (target.soundEnabled) {
+        requestBody.android_sound = 'announcement_tone'
+      }
+
+      let targetSucceeded = false
+      let targetResponse: unknown = null
+      for (let attempt = 1; attempt <= MAX_RETRY; attempt++) {
+        attempts += 1
+        const pushResponse = await fetch('https://api.onesignal.com/notifications', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Key ${apiKey}`,
+          },
+          body: JSON.stringify(requestBody),
+        })
+
+        providerHttpStatus = pushResponse.status
+        targetResponse = await pushResponse.json()
+
+        if (pushResponse.ok) {
+          targetSucceeded = true
+          break
+        }
+
+        lastError = JSON.stringify(targetResponse)
+        if (!shouldRetry(pushResponse.status) || attempt === MAX_RETRY) {
+          break
+        }
+
+        await sleep(400 * 2 ** (attempt - 1))
+      }
+
+      targetCount += getRecipientCount(targetResponse)
+
+      providerResponses.push({
+        target: target.name,
+        sound_enabled: target.soundEnabled,
+        channel_id: channelId || null,
+        success: targetSucceeded,
+        response: targetResponse,
       })
 
-      providerHttpStatus = pushResponse.status
-      providerResponse = await pushResponse.json()
-
-      if (pushResponse.ok) {
-        providerStatus = 'success'
+      if (!targetSucceeded) {
+        providerStatus = 'failed'
         break
       }
 
-      lastError = JSON.stringify(providerResponse)
-      if (!shouldRetry(pushResponse.status) || attempt === MAX_RETRY) {
-        break
-      }
-
-      await sleep(400 * 2 ** (attempt - 1))
+      providerStatus = 'success'
     }
 
     await upsertDispatchLog(supabase, record.id, {
       request_id: requestId,
       target_mode: targetMode,
-      target_count: subscriptionIds.length,
+      target_count: targetCount,
       provider_status: providerStatus,
       provider_http_status: providerHttpStatus,
-      provider_response: providerResponse,
+      provider_response: providerResponses,
       attempt_count: attempts,
       last_error: lastError || null,
       sent_at: providerStatus === 'success' ? new Date().toISOString() : null,
@@ -253,8 +371,9 @@ serve(async (req: Request) => {
       level: providerStatus === 'success' ? 'info' : 'error',
       request_id: requestId,
       announcement_id: record.id,
+      category,
       target_mode: targetMode,
-      subscription_count: subscriptionIds.length,
+      target_count: targetCount,
       provider_status: providerStatus,
       provider_http_status: providerHttpStatus,
       duration_ms: Date.now() - startedAt,
@@ -270,10 +389,10 @@ serve(async (req: Request) => {
           request_id: requestId,
           debug: {
             targetMode,
-            subscriptionCount: subscriptionIds.length,
-            sampleSubscriptionIds: subscriptionIds.slice(0, 3),
+            targetCount,
+            responses: providerResponses,
           },
-          response: providerResponse,
+          response: providerResponses,
         }),
         { headers: { 'Content-Type': 'application/json' }, status: 400 },
       )
@@ -286,10 +405,9 @@ serve(async (req: Request) => {
         request_id: requestId,
         debug: {
           targetMode,
-          subscriptionCount: subscriptionIds.length,
-          sampleSubscriptionIds: subscriptionIds.slice(0, 3),
+          targetCount,
         },
-        response: providerResponse,
+        response: providerResponses,
       }),
       { headers: { 'Content-Type': 'application/json' } },
     )

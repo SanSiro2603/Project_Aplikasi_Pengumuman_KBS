@@ -47,4 +47,5 @@ app.*.map.json
 
 # Local environment and Supabase CLI temp
 env/*.json
+!env/*.example.json
 supabase/.temp/

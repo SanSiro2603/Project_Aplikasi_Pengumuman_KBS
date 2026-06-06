@@ -17,9 +17,10 @@ class AppRouter {
       final isGoingToAdmin = state.matchedLocation.startsWith('/admin');
       final isGoingToLogin = state.matchedLocation == '/admin/login';
 
+      // Admin access is controlled by Supabase Auth metadata role=admin.
       if (isGoingToAdmin) {
         if (!isAuth && !isGoingToLogin) {
-          return '/admin/login'; // Cekam admin yg belum login
+          return '/admin/login';
         }
         if (isAuth && !isAdmin && !isGoingToLogin) {
           return '/home';

@@ -44,13 +44,36 @@ Aplikasi ini dibuat agar informasi penting seperti kegiatan warga, kesehatan, in
 - Push notification menggunakan OneSignal saat pengumuman baru dipublikasikan.
 - Dukungan distribusi APK mandiri dengan manifest update.
 
-## 5. Screenshot
+## 5. Dokumentasi Cepat
+
+Untuk teman atau developer baru, mulai dari dokumen ini:
+
+| Dokumen | Fungsi |
+| --- | --- |
+| [Handover Guide](docs/HANDOVER_GUIDE.md) | Setup dari nol memakai akun Supabase dan OneSignal baru, run app, build APK, dan troubleshooting. |
+| [Code Guide](docs/CODE_GUIDE.md) | Peta file dan alur fitur agar mudah membaca source code. |
+| [Notification Flow](docs/NOTIFICATION_FLOW.md) | Alur publish pengumuman sampai notifikasi masuk ke HP, termasuk suara per kategori. |
+| [Deployment Guide](docs/DEPLOYMENT.md) | Catatan deploy dev/prod dan pipeline GitHub Actions. |
+| [Distribusi APK](docs/DISTRIBUTION_APK.md) | Alur release APK mandiri, manifest update, dan GitHub Pages. |
+
+Command lokal yang paling sering dipakai:
+
+```powershell
+supabase db push --project-ref PROJECT_REF --password DB_PASSWORD
+supabase functions deploy notify_warga --project-ref PROJECT_REF
+flutter run --dart-define-from-file=env/dev.json
+flutter build apk --release --split-per-abi --dart-define-from-file=env/dev.json
+```
+
+Template config aman untuk aplikasi ada di `env/dev.example.json`.
+
+## 6. Screenshot
 
 <p align="center">
   <img src="docs/screenshots/home-portrait.png" alt="Screenshot halaman utama Pengumuman KBS" width="360" />
 </p>
 
-## 6. Tech Stack + Icon
+## 7. Tech Stack + Icon
 
 <p>
   <img src="https://img.shields.io/badge/Flutter-Framework_UI-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter" />

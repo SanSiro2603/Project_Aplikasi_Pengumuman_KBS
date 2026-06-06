@@ -75,6 +75,7 @@ class NotificationService {
       }
     }
 
+    // OneSignal tags drive backend targeting for sound vs silent per category.
     final tags = <String, String>{
       'notif_allowed': notifAllowed ? '1' : '0',
       'sound_mode_per_category': modePerCategory ? '1' : '0',

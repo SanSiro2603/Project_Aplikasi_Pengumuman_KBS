@@ -18,19 +18,21 @@ class MainActivity : FlutterActivity() {
     private fun createAnnouncementChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
 
-        val channelId = "announcement_channel_v2"
-        val channelName = "Pengumuman Desa"
+        val soundChannelId = "announcement_channel_sound_v3"
+        val silentChannelId = "announcement_channel_silent_v1"
         val channelDescription = "Notifikasi pengumuman warga"
 
+        // Android 8+ locks notification sound per channel, so sound and silent
+        // notifications must use separate channel ids.
         val soundUri = Uri.parse("android.resource://$packageName/raw/announcement_tone")
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_NOTIFICATION)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
 
-        val channel = NotificationChannel(
-            channelId,
-            channelName,
+        val soundChannel = NotificationChannel(
+            soundChannelId,
+            "Pengumuman Desa - Bersuara",
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
             description = channelDescription
@@ -38,8 +40,19 @@ class MainActivity : FlutterActivity() {
             setSound(soundUri, audioAttributes)
         }
 
+        val silentChannel = NotificationChannel(
+            silentChannelId,
+            "Pengumuman Desa - Senyap",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = channelDescription
+            enableVibration(true)
+            setSound(null, null)
+        }
+
         val manager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.createNotificationChannel(channel)
+        manager.createNotificationChannel(soundChannel)
+        manager.createNotificationChannel(silentChannel)
     }
 }
